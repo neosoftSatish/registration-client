@@ -1,5 +1,6 @@
 package io.mosip.registration.service.sync;
 
+import java.awt.image.BufferedImage;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -77,4 +78,11 @@ public interface PreRegistrationDataSyncService {
 	 * @return the timestamp
 	 */
 	public Timestamp getLastPreRegPacketDownloadedTime();
+	
+	/**
+	 * Fetch Pre-Registration by scaning the QR code.
+	 * 
+	 * @return ResponseDTO - holds response data
+	 */
+	public ResponseDTO scanPreRegistrationId(BufferedImage bufferedImage);
 }

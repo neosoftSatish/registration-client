@@ -173,6 +173,18 @@ public class DocumentScanController extends BaseController {
 		}
 		throw new Exception("No Camera Devices connected");
 	}
+	
+	public BufferedImage captureQRCodeBufferedImage() throws Exception {
+		List<DocScanDevice> devices = docScannerFacade.getConnectedDevices();
+
+		if (!devices.isEmpty()) {
+			BufferedImage bufferedImage = docScannerFacade.scanDocument(devices.get(0));
+			// Enable Auto-Logout
+			SessionContext.setAutoLogout(true);
+			return bufferedImage;
+		}
+		throw new Exception("No Devices connected");
+	}
 
 
 	/**

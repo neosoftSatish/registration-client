@@ -1,5 +1,6 @@
 package io.mosip.registration.service.sync.impl;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -22,16 +23,21 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
-import io.micrometer.core.annotation.Counted;
-import io.micrometer.core.annotation.Timed;
-import io.mosip.registration.dto.*;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.Result;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.core.util.FileUtils;
@@ -40,6 +46,15 @@ import io.mosip.registration.config.AppConfig;
 import io.mosip.registration.constants.RegistrationConstants;
 import io.mosip.registration.context.SessionContext;
 import io.mosip.registration.dao.PreRegistrationDataSyncDAO;
+import io.mosip.registration.dto.MainResponseDTO;
+import io.mosip.registration.dto.PreRegArchiveDTO;
+import io.mosip.registration.dto.PreRegistrationDTO;
+import io.mosip.registration.dto.PreRegistrationDataSyncDTO;
+import io.mosip.registration.dto.PreRegistrationDataSyncRequestDTO;
+import io.mosip.registration.dto.PreRegistrationExceptionJSONInfoDTO;
+import io.mosip.registration.dto.PreRegistrationIdsDTO;
+import io.mosip.registration.dto.RegistrationDTO;
+import io.mosip.registration.dto.ResponseDTO;
 import io.mosip.registration.entity.PreRegistrationList;
 import io.mosip.registration.entity.SyncTransaction;
 import io.mosip.registration.exception.ConnectionException;
@@ -559,6 +574,26 @@ public class PreRegistrationDataSyncServiceImpl extends BaseService implements P
 	@Override
 	public Timestamp getLastPreRegPacketDownloadedTime() {
 		return preRegistrationDAO.getLastPreRegPacketDownloadedTime();
+	}
+
+	@Override
+	public ResponseDTO scanPreRegistrationId(BufferedImage bufferedImage) {
+
+		ResponseDTO responseDTO = new ResponseDTO();
+		BinaryBitmap binaryBitmap = new BinaryBitmap(
+				new HybridBinarizer(new BufferedImageLuminanceSource(bufferedImage)));
+
+		try {
+			Result result = new MultiFormatReader().decode(binaryBitmap);
+			Map<String, Object> attributes = new WeakHashMap<>();
+			attributes.put("preRegistrationId", result.getText());
+			setSuccessResponse(responseDTO, RegistrationConstants.SCAN_PRE_REGISTRATION_SUCCESS, attributes);
+			return responseDTO;
+		} catch (NotFoundException ex) {
+			LOGGER.error("There is no QR code in the image", ex);
+			setErrorResponse(responseDTO, RegistrationConstants.SCAN_PRE_REGISTRATION_ERROR, null);
+			return responseDTO;
+		}
 	}
 
 }

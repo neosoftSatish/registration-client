@@ -930,9 +930,11 @@ public class RegistrationConstants {
 	public static final String PRE_REG_TO_GET_ID_ERROR = "PRE_REG_TO_GET_ID_ERROR";
 	public static final String PRE_REG_TO_GET_PACKET_ERROR = "PRE_REG_TO_GET_PACKET_ERROR";
 	public static final String PRE_REG_PACKET_NETWORK_ERROR = "PRE_REG_PACKET_NETWORK_ERROR";
+	public static final String SCAN_PRE_REGISTRATION_ERROR = "SCAN_PRE_REGISTRATION_ERROR";
 	public static final String CONSUMED_PRID_ERROR_CODE = "PRG_DATA_SYNC_022";
 	public static final String PRE_REG_CONSUMED_PACKET_ERROR = "PRE_REG_CONSUMED_PACKET_ERROR";
 	public static final String PRE_REG_SUCCESS_MESSAGE = "PRE_REG_SUCCESS_MESSAGE";
+	public static final String SCAN_PRE_REGISTRATION_SUCCESS = "SCAN_PRE_REGISTRATION_SUCCESS";
 	public static final String IS_PRE_REG_SYNC = "PreRegSync";
 	public static final String PRE_REG_FILE_NAME = "fileName";
 	public static final String PRE_REG_FILE_CONTENT = "fileContent";

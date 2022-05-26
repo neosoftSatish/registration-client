@@ -4,6 +4,7 @@ import static io.mosip.registration.constants.RegistrationConstants.EMPTY;
 import static io.mosip.registration.constants.RegistrationConstants.HASH;
 import static io.mosip.registration.constants.RegistrationConstants.REG_AUTH_PAGE;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -31,6 +32,7 @@ import io.mosip.registration.constants.RegistrationUIConstants;
 import io.mosip.registration.context.ApplicationContext;
 import io.mosip.registration.context.SessionContext;
 import io.mosip.registration.controller.auth.AuthenticationController;
+import io.mosip.registration.controller.reg.DocumentScanController;
 import io.mosip.registration.controller.reg.RegistrationPreviewController;
 import io.mosip.registration.dao.MasterSyncDao;
 import io.mosip.registration.dto.ErrorResponseDTO;
@@ -136,6 +138,9 @@ public class GenericController extends BaseController {
 
 	@Autowired
 	private AuthenticationController authenticationController;
+	
+	@Autowired
+	private DocumentScanController documentScanController;
 
 	@Autowired
 	private MasterSyncDao masterSyncDao;
@@ -217,11 +222,80 @@ public class GenericController extends BaseController {
 		});
 
 		hBox.getChildren().add(button);
+		Button qrButton = new Button();
+		qrButton.setId("scanQr");
+		qrButton.getStyleClass().add("demoGraphicPaneContentButton");
+		qrButton.setText(ApplicationContext.getBundle(langCode, RegistrationConstants.LABELS)
+				.getString("scan_qr"));
+
+		qrButton.setOnAction(event -> {
+			fetchPreRegIdUsingQRScan();
+		});
+
+		hBox.getChildren().add(qrButton);
 		progressIndicator = new ProgressIndicator();
 		progressIndicator.setId("progressIndicator");
 		progressIndicator.setVisible(false);
 		hBox.getChildren().add(progressIndicator);
 		return hBox;
+	}
+	
+	private void fetchPreRegIdUsingQRScan() {
+
+		try {
+			BufferedImage bufferedImage = documentScanController.captureQRCodeBufferedImage();
+
+			genericScreen.setDisable(true);
+			progressIndicator.setVisible(true);
+
+			Service<Void> taskService = new Service<Void>() {
+				@Override
+				protected Task<Void> createTask() {
+					return new Task<Void>() {
+
+						@Override
+						protected Void call() {
+							Platform.runLater(() -> {
+								ResponseDTO responseDTO = preRegistrationDataSyncService
+										.scanPreRegistrationId(bufferedImage);
+								if (responseDTO.getErrorResponseDTOs() != null
+										&& !responseDTO.getErrorResponseDTOs().isEmpty()
+										&& responseDTO.getErrorResponseDTOs().get(0).getMessage() != null
+										&& responseDTO.getErrorResponseDTOs().get(0).getMessage()
+												.equalsIgnoreCase(RegistrationConstants.SCAN_PRE_REGISTRATION_ERROR)) {
+									generateAlertLanguageSpecific(RegistrationConstants.ERROR,
+											RegistrationConstants.SCAN_PRE_REGISTRATION_ERROR);
+									return;
+								}
+
+							});
+							return null;
+						}
+					};
+				}
+			};
+
+			progressIndicator.progressProperty().bind(taskService.progressProperty());
+			taskService.start();
+			taskService.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+				@Override
+				public void handle(WorkerStateEvent workerStateEvent) {
+					genericScreen.setDisable(false);
+					progressIndicator.setVisible(false);
+				}
+			});
+			taskService.setOnFailed(new EventHandler<WorkerStateEvent>() {
+				@Override
+				public void handle(WorkerStateEvent t) {
+					LOGGER.debug("Pre Registration Scan failed");
+					genericScreen.setDisable(false);
+					progressIndicator.setVisible(false);
+				}
+			});
+		} catch (Exception e) {
+			generateAlertLanguageSpecific(RegistrationConstants.ERROR,
+					RegistrationConstants.SCAN_PRE_REGISTRATION_ERROR);
+		}
 	}
 
 	private void executePreRegFetchTask(TextField textField) {
